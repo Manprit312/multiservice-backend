@@ -9,28 +9,26 @@ dotenv.config();
 const app = express();
 connectDB();
 
+app.use(express.json());
+
 const allowedOrigins = [
   "https://multiservices-alpha.vercel.app",
   "https://multiserve-admin.vercel.app",
-  "http://localhost:3000", // keep for local dev
+  "http://localhost:3000",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like curl or Postman)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
+      if (allowedOrigins.includes(origin)) callback(null, true);
+      else callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.options("*", cors());
 
 app.use(express.json());
 
