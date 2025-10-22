@@ -5,36 +5,41 @@ import connectDB from "./config/db.js";
 import hotelRoutes from "./routes/hotelRoutes.js";
 import cleaningRoutes from "./routes/cleaningRoutes.js";
 import cleaningBannerRoutes from "./routes/cleaningBannerRoutes.js";
+
 dotenv.config();
 const app = express();
 connectDB();
 
-app.use(express.json());
-
+// ✅ Vercel-safe CORS config
 const allowedOrigins = [
   "https://multiservices-alpha.vercel.app",
   "https://multiserve-admin.vercel.app",
-  "http://localhost:3000",
+  "http://localhost:3000"
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) callback(null, true);
-      else callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn("❌ Blocked by CORS:", origin);
+      callback(null, false); // don't crash function
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
 
-app.options("*", cors());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
+// ✅ Routes
 app.get("/", (req, res) => res.send("API is running..."));
 app.use("/api/cleaning-banners", cleaningBannerRoutes);
 app.use("/api/hotels", hotelRoutes);
 app.use("/api/cleaning", cleaningRoutes);
-const PORT = process.env.PORT || 5000;
-export default app; 
+
+export default app;
