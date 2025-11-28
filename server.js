@@ -41,21 +41,39 @@ app.get("/", (req, res) => res.json({ message: "API is running...", status: "ok"
 
 // Connect to database (optimized for serverless)
 let dbConnected = false;
+let dbConnecting = false;
+
 const connectDBOnce = async () => {
-  if (!dbConnected) {
-    try {
-      await connectDB();
-      dbConnected = true;
-    } catch (error) {
-      console.error("Database connection error:", error);
-      // Don't throw in serverless - let individual routes handle it
+  if (dbConnected) {
+    return;
+  }
+  
+  if (dbConnecting) {
+    // Wait for existing connection attempt
+    while (!dbConnected && dbConnecting) {
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
+    return;
+  }
+  
+  dbConnecting = true;
+  try {
+    await connectDB();
+    dbConnected = true;
+  } catch (error) {
+    console.error("Database connection error:", error);
+    // Don't throw in serverless - let individual routes handle it
+  } finally {
+    dbConnecting = false;
   }
 };
 
-// Middleware to ensure DB connection before routes
+// Middleware to ensure DB connection before routes (non-blocking)
 app.use(async (req, res, next) => {
-  await connectDBOnce();
+  // Connect in background, don't block requests
+  connectDBOnce().catch(err => {
+    console.error("Background DB connection error:", err);
+  });
   next();
 });
 
@@ -69,6 +87,32 @@ app.use("/api/contacts", contactRoutes);
 app.use("/api/home-banners", homeBannerRoutes);
 app.use("/api/book-ride", bookingRoutes);
 app.use("/api/providers", providerRoutes);
+
+// 404 handler for undefined routes
+app.use((req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: `Route ${req.method} ${req.path} not found`,
+    availableRoutes: [
+      "GET /",
+      "GET /api/home-banners",
+      "GET /api/providers",
+      "GET /api/hotels",
+      "GET /api/cleaning",
+      "POST /api/auth/register",
+      "POST /api/auth/login",
+    ]
+  });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("Error:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal server error",
+  });
+});
 
 // ✅ Only start server here if not in Vercel
 if (!process.env.VERCEL) {
