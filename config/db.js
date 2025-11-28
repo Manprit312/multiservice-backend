@@ -22,7 +22,6 @@ const connectDB = async () => {
     }
 
     // Connection options optimized for serverless
-    // Note: bufferCommands and bufferMaxEntries are Mongoose-specific, not MongoDB driver options
     const options = {
       maxPoolSize: 10, // Maintain up to 10 socket connections
       serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
@@ -31,8 +30,8 @@ const connectDB = async () => {
     };
 
     // Set Mongoose-specific options (not MongoDB driver options)
+    // Note: bufferMaxEntries was removed in newer Mongoose versions
     mongoose.set('bufferCommands', false); // Disable mongoose buffering (important for serverless)
-    mongoose.set('bufferMaxEntries', 0); // Disable mongoose buffering
 
     // Create connection promise and cache it
     cachedConnection = mongoose.connect(mongoURI, options)
