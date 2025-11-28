@@ -22,15 +22,17 @@ const connectDB = async () => {
     }
 
     // Connection options optimized for serverless
+    // Note: bufferCommands and bufferMaxEntries are Mongoose-specific, not MongoDB driver options
     const options = {
       maxPoolSize: 10, // Maintain up to 10 socket connections
       serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-      bufferCommands: false, // Disable mongoose buffering (important for serverless)
-      bufferMaxEntries: 0, // Disable mongoose buffering
-      // Serverless-specific optimizations
       connectTimeoutMS: 10000, // Connection timeout
     };
+
+    // Set Mongoose-specific options (not MongoDB driver options)
+    mongoose.set('bufferCommands', false); // Disable mongoose buffering (important for serverless)
+    mongoose.set('bufferMaxEntries', 0); // Disable mongoose buffering
 
     // Create connection promise and cache it
     cachedConnection = mongoose.connect(mongoURI, options)
