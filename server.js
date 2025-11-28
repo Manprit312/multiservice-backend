@@ -17,12 +17,16 @@ const app = express();
 (async () => {
   await connectDB(); // ✅ safely connect to DB before starting routes
 
+  // Dynamic CORS origins for Vercel deployment
   const allowedOrigins = [
     "https://multiservices-alpha.vercel.app",
     "https://multiserve-admin.vercel.app",
     "http://localhost:3000",
     "http://localhost:3001",
-  ];
+    // Add your Vercel deployment URLs here
+    process.env.FRONTEND_URL,
+    process.env.ADMIN_DASHBOARD_URL,
+  ].filter(Boolean); // Remove undefined values
 
   app.use(
     cors({
