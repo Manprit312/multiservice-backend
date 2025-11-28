@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import mongoose from "mongoose";
 import connectDB from "./config/db.js";
 import hotelRoutes from "./routes/hotelRoutes.js";
 import cleaningRoutes from "./routes/cleaningRoutes.js";
@@ -41,40 +42,48 @@ app.get("/", (req, res) => res.json({ message: "API is running...", status: "ok"
 
 // Connect to database (optimized for serverless)
 let dbConnected = false;
-let dbConnecting = false;
+let dbConnecting = null; // Store the promise instead of boolean
 
 const connectDBOnce = async () => {
-  if (dbConnected) {
-    return;
-  }
-  
-  if (dbConnecting) {
-    // Wait for existing connection attempt
-    while (!dbConnected && dbConnecting) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    return;
-  }
-  
-  dbConnecting = true;
-  try {
-    await connectDB();
+  // If already connected, return immediately
+  if (mongoose.connection.readyState === 1) {
     dbConnected = true;
-  } catch (error) {
-    console.error("Database connection error:", error);
-    // Don't throw in serverless - let individual routes handle it
-  } finally {
-    dbConnecting = false;
+    return;
   }
+  
+  // If connection is in progress, wait for it
+  if (dbConnecting) {
+    return dbConnecting;
+  }
+  
+  // Start new connection
+  dbConnecting = (async () => {
+    try {
+      await connectDB();
+      dbConnected = true;
+      return;
+    } catch (error) {
+      console.error("Database connection error:", error);
+      dbConnecting = null; // Reset on error so we can retry
+      throw error;
+    }
+  })();
+  
+  return dbConnecting;
 };
 
-// Middleware to ensure DB connection before routes (non-blocking)
+// Middleware to ensure DB connection before routes (BLOCKING - required for bufferCommands: false)
 app.use(async (req, res, next) => {
-  // Connect in background, don't block requests
-  connectDBOnce().catch(err => {
-    console.error("Background DB connection error:", err);
-  });
-  next();
+  try {
+    // Wait for database connection before proceeding
+    await connectDBOnce();
+    next();
+  } catch (error) {
+    // If connection fails, still allow request but log error
+    // Individual routes can handle the error
+    console.error("Database connection failed in middleware:", error);
+    next();
+  }
 });
 
 // API Routes
