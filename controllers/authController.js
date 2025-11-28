@@ -1,17 +1,84 @@
 import User from "../models/User.js";
+import Provider from "../models/Provider.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { 
+      name, 
+      email, 
+      password,
+      // Provider info
+      providerName,
+      phone,
+      address,
+      city,
+      state,
+      pincode,
+      description,
+    } = req.body;
+    
     const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ message: "User already exists" });
+    if (userExists) return res.status(400).json({ success: false, message: "User already exists" });
 
+    // Create user first
     const user = await User.create({ name, email, password });
-    res.json({ message: "User registered", user });
+
+    // Automatically create a provider for the user with provided info
+    try {
+      const provider = await Provider.create({
+        name: providerName || name, // Use provider name or fallback to user name
+        email: email, // Use user's email
+        phone: phone || "",
+        address: address || "",
+        city: city || "",
+        state: state || "",
+        pincode: pincode || "",
+        description: description || `Service provider account for ${name}`,
+        isActive: true,
+        user: user._id, // Link provider to user
+      });
+
+      // Link user to provider
+      user.provider = provider._id;
+      await user.save();
+
+      res.json({ 
+        success: true,
+        message: "User registered and provider created successfully", 
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          provider: provider._id,
+        },
+        provider: {
+          _id: provider._id,
+          name: provider.name,
+          email: provider.email,
+        }
+      });
+    } catch (providerError) {
+      // If provider creation fails, still return user but log the error
+      console.error("Provider creation error:", providerError);
+      // Don't fail the registration, user is created successfully
+      res.json({ 
+        success: true,
+        message: "User registered successfully. Provider creation had an issue.", 
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+        warning: "Provider creation failed. Please create provider manually."
+      });
+    }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Registration error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

@@ -1,9 +1,10 @@
 import Cleaning from "../models/cleaningModel.js";
+import Provider from "../models/Provider.js";
 import cloudinary from "../config/cloudinary.js";
 
 export const addCleaning = async (req, res) => {
   try {
-    const { name, description, price, category, duration, suppliesIncluded } = req.body;
+    const { name, description, price, category, duration, suppliesIncluded, provider } = req.body;
 
     const uploadedImages = [];
     if (req.files && req.files.length > 0) {
@@ -26,8 +27,18 @@ export const addCleaning = async (req, res) => {
       category,
       duration,
       suppliesIncluded,
+      provider,
       images: uploadedImages,
     });
+
+    // If provider is specified, add this service to the provider's services array
+    if (provider) {
+      await Provider.findByIdAndUpdate(
+        provider,
+        { $addToSet: { services: newCleaning._id } },
+        { new: true }
+      );
+    }
 
     res.status(201).json({ success: true, cleaning: newCleaning });
   } catch (error) {
@@ -38,7 +49,12 @@ export const addCleaning = async (req, res) => {
 
 export const getCleanings = async (req, res) => {
   try {
-    const cleanings = await Cleaning.find().sort({ createdAt: -1 });
+    const { providerId } = req.query;
+    const query = {};
+    if (providerId) {
+      query.provider = providerId;
+    }
+    const cleanings = await Cleaning.find(query).populate("provider").sort({ createdAt: -1 });
     res.json({ success: true, cleanings });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -47,7 +63,7 @@ export const getCleanings = async (req, res) => {
 
 export const getCleaningById = async (req, res) => {
   try {
-    const cleaning = await Cleaning.findById(req.params.id);
+    const cleaning = await Cleaning.findById(req.params.id).populate("provider");
     if (!cleaning)
       return res.status(404).json({ success: false, message: "Cleaning service not found" });
     res.json({ success: true, cleaning });
@@ -106,6 +122,19 @@ export const updateCleaning = async (req, res) => {
 };
 export const deleteCleaning = async (req, res) => {
   try {
+    const service = await Cleaning.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ success: false, message: "Service not found" });
+    }
+
+    // Remove service from provider's services array if it has a provider
+    if (service.provider) {
+      await Provider.findByIdAndUpdate(
+        service.provider,
+        { $pull: { services: service._id } }
+      );
+    }
+
     await Cleaning.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Cleaning service deleted" });
   } catch (error) {

@@ -1,27 +1,55 @@
 import Ride from "../models/Ride.js";
 
+import Provider from "../models/Provider.js";
+
 export const bookRide = async (req, res) => {
   try {
-    const { pickup, drop, when } = req.body;
+    const { pickup, drop, when, provider, vehicleType, driverId, fare, distance, paymentMethod } = req.body;
     if (!pickup || !drop) {
       return res.status(400).json({ ok: false, message: "Pickup and drop are required" });
     }
 
-    const baseFare = 30;
-    const distance = Math.floor(Math.random() * 10) + 2;
-    const perKmRate = 12;
-    const fare = baseFare + distance * perKmRate;
+    // Use provided fare or calculate
+    let calculatedFare = fare;
+    if (!calculatedFare) {
+      const baseFare = vehicleType === "bike" ? 20 : vehicleType === "auto" ? 30 : 50;
+      const perKmRate = vehicleType === "bike" ? 5 : vehicleType === "auto" ? 8 : 12;
+      const rideDistance = distance || Math.floor(Math.random() * 10) + 2;
+      calculatedFare = baseFare + rideDistance * perKmRate;
+    }
 
-    const ride = await Ride.create({ pickup, drop, when, fare });
+    const ride = await Ride.create({
+      pickup,
+      drop,
+      when: when || new Date().toISOString(),
+      fare: calculatedFare,
+      distance: distance || null,
+      vehicleType: vehicleType || null,
+      driverId: driverId || null,
+      paymentMethod: paymentMethod || "cash",
+      status: "confirmed",
+      provider,
+    });
+
+    // If provider is specified, add this ride to the provider's services
+    if (provider) {
+      await Provider.findByIdAndUpdate(
+        provider,
+        { $addToSet: { services: ride._id } },
+        { new: true }
+      );
+    }
 
     res.status(200).json({
       ok: true,
+      success: true,
       message: `Ride booked successfully from ${pickup} to ${drop}`,
-      fare,
+      fare: calculatedFare,
       rideId: ride._id,
+      ride: ride,
     });
   } catch (err) {
     console.error("Booking Error:", err);
-    res.status(500).json({ ok: false, message: "Internal server error" });
+    res.status(500).json({ ok: false, success: false, message: "Internal server error" });
   }
 };

@@ -8,6 +8,8 @@ import cleaningBannerRoutes from "./routes/cleaningBannerRoutes.js";
 import homeBannerRoutes from "./routes/homeBannerRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js"
 import bookingRoutes from "./routes/ridebookingRoutes.js";
+import providerRoutes from "./routes/providerRoutes.js";
+import hotelBookingRoutes from "./routes/hotelBookingRoutes.js";
 
 
 dotenv.config();
@@ -34,11 +36,13 @@ const app = express();
 
   app.get("/", (req, res) => res.send("API is running..."));
   app.use("/api/hotels", hotelRoutes);
+  app.use("/api/hotels", hotelBookingRoutes); // Hotel booking routes
   app.use("/api/cleaning", cleaningRoutes);
   app.use("/api/cleaning-banners", cleaningBannerRoutes);
   app.use("/api/contacts", contactRoutes);
   app.use("/api/home-banners", homeBannerRoutes);
   app.use("/api/book-ride", bookingRoutes);
+  app.use("/api/providers", providerRoutes);
 
   // ✅ Only start server here if not in Vercel
   if (!process.env.VERCEL) {
