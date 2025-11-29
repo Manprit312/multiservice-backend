@@ -22,16 +22,39 @@ const allowedOrigins = [
   "https://multiserve-admin.vercel.app",
   "http://localhost:3000",
   "http://localhost:3001",
+  "http://localhost:3002",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:3002",
   // Add your Vercel deployment URLs here
   process.env.FRONTEND_URL,
   process.env.ADMIN_DASHBOARD_URL,
 ].filter(Boolean); // Remove undefined values
 
+// CORS configuration with more permissive settings for development
 app.use(
   cors({
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, Postman, or curl)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        // In development, allow all localhost origins
+        if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
 

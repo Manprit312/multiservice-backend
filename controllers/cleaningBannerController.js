@@ -19,7 +19,7 @@ export const addCleaningBanner = async (req, res) => {
 
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder: "multiserv_cleaning_banners" },
+        { folder: "Ausweb/banners/cleaning" },
         (error, result) => (error ? reject(error) : resolve(result))
       );
       stream.end(req.file.buffer);
@@ -73,7 +73,7 @@ export const updateCleaningBanner = async (req, res) => {
     if (req.file) {
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: "multiserv_cleaning_banners" },
+          { folder: "Ausweb/banners/cleaning" },
           (error, result) => (error ? reject(error) : resolve(result))
         );
         stream.end(req.file.buffer);

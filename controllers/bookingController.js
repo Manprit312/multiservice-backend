@@ -1,6 +1,36 @@
 import Ride from "../models/Ride.js";
-
 import Provider from "../models/Provider.js";
+
+// Get all rides
+export const getRides = async (req, res) => {
+  try {
+    const { providerId, vehicleType, pickup, drop } = req.query;
+    let query = {};
+
+    if (providerId) query.provider = providerId;
+    if (vehicleType) query.vehicleType = vehicleType;
+    if (pickup) query.pickup = { $regex: pickup, $options: "i" };
+    if (drop) query.drop = { $regex: drop, $options: "i" };
+
+    const rides = await Ride.find(query).populate("provider").sort({ createdAt: -1 });
+    res.json({ success: true, rides });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get ride by ID
+export const getRideById = async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.id).populate("provider");
+    if (!ride) {
+      return res.status(404).json({ success: false, message: "Ride not found" });
+    }
+    res.json({ success: true, ride });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 export const bookRide = async (req, res) => {
   try {

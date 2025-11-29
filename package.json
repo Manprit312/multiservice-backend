@@ -6,7 +6,8 @@
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:providers": "node scripts/seedProviders.js",
-    "seed:services": "node scripts/seedAllServices.js"
+    "seed:services": "node scripts/seedAllServices.js",
+    "seed:mock": "node scripts/seedMockData.js"
   },
   "keywords": [],
   "author": "",

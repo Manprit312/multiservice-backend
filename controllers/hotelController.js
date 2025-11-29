@@ -35,7 +35,7 @@ export const addHotel = async (req, res) => {
       for (const file of req.files) {
         const result = await new Promise((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream(
-            { folder: "multiserv_hotels" },
+            { folder: "Ausweb/hotels" },
             (error, result) => (error ? reject(error) : resolve(result))
           );
           stream.end(file.buffer);
@@ -82,7 +82,7 @@ export const updateHotel = async (req, res) => {
       for (const file of req.files) {
         const result = await new Promise((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream(
-            { folder: "multiserv_hotels" },
+            { folder: "Ausweb/hotels" },
             (error, result) => (error ? reject(error) : resolve(result))
           );
           stream.end(file.buffer);

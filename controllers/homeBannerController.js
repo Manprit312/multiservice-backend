@@ -8,7 +8,7 @@ export const addHomeBanner = async (req, res) => {
     if (req.file) {
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: "multiserv_home_banners" },
+          { folder: "Ausweb/banners/home" },
           (error, result) => (error ? reject(error) : resolve(result))
         );
         stream.end(req.file.buffer);
@@ -74,7 +74,7 @@ export const updateHomeBanner = async (req, res) => {
     if (req.file) {
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: "multiserv_home_banners" },
+          { folder: "Ausweb/banners/home" },
           (error, result) => (error ? reject(error) : resolve(result))
         );
         stream.end(req.file.buffer);

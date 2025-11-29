@@ -26,7 +26,7 @@ export const addProvider = async (req, res) => {
       const logoFile = req.files.find((f) => f.fieldname === "logo");
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: "multiserv_providers" },
+          { folder: "Ausweb/providers" },
           (error, result) => (error ? reject(error) : resolve(result))
         );
         stream.end(logoFile.buffer);
@@ -41,7 +41,7 @@ export const addProvider = async (req, res) => {
         if (file.fieldname !== "logo") {
           const result = await new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream(
-              { folder: "multiserv_providers" },
+              { folder: "Ausweb/providers" },
               (error, result) => (error ? reject(error) : resolve(result))
             );
             stream.end(file.buffer);
@@ -150,7 +150,7 @@ export const updateProvider = async (req, res) => {
       const logoFile = req.files.find((f) => f.fieldname === "logo");
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: "multiserv_providers" },
+          { folder: "Ausweb/providers" },
           (error, result) => (error ? reject(error) : resolve(result))
         );
         stream.end(logoFile.buffer);
@@ -165,7 +165,7 @@ export const updateProvider = async (req, res) => {
         if (file.fieldname !== "logo") {
           const result = await new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream(
-              { folder: "multiserv_providers" },
+              { folder: "Ausweb/providers" },
               (error, result) => (error ? reject(error) : resolve(result))
             );
             stream.end(file.buffer);

@@ -11,7 +11,7 @@ export const addCleaning = async (req, res) => {
       for (const file of req.files) {
         const result = await new Promise((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream(
-            { folder: "multiserv_cleaning" },
+            { folder: "Ausweb/cleaning" },
             (error, result) => (error ? reject(error) : resolve(result))
           );
           stream.end(file.buffer);
@@ -83,7 +83,7 @@ export const updateCleaning = async (req, res) => {
       for (const file of req.files) {
         const uploadResult = await new Promise((resolve, reject) => {
           const stream = cloudinary.uploader.upload_stream(
-            { folder: "multiserv_cleaning" },
+            { folder: "Ausweb/cleaning" },
             (error, result) => {
               if (error) reject(error);
               else resolve(result);

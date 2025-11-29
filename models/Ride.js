@@ -11,6 +11,11 @@ const rideSchema = new mongoose.Schema({
   paymentMethod: { type: String, enum: ["cash", "card", "wallet"] },
   status: { type: String, enum: ["pending", "confirmed", "on_way", "completed", "cancelled"], default: "pending" },
   provider: { type: mongoose.Schema.Types.ObjectId, ref: "Provider" }, // Reference to provider
+  // Additional fields for better frontend display
+  name: String, // Service name (e.g., "Airport Transfer")
+  description: String, // Service description
+  images: [String], // Service images
+  rating: Number, // Service rating
   createdAt: {
     type: Date,
     default: Date.now,
