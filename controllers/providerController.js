@@ -2,10 +2,27 @@ import Provider from "../models/Provider.js";
 import Cleaning from "../models/cleaningModel.js";
 import Hotel from "../models/Hotel.js";
 import Ride from "../models/Ride.js";
+import User from "../models/User.js";
 import cloudinary from "../config/cloudinary.js";
+import { verifyFirebaseToken } from "./firebaseAuthController.js";
 
 export const addProvider = async (req, res) => {
   try {
+    // Get user from Firebase token
+    const authHeader = req.headers.authorization;
+    let userId = null;
+    
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      const firebaseUser = await verifyFirebaseToken(token);
+      if (firebaseUser) {
+        const user = await User.findOne({ firebaseUid: firebaseUser.uid });
+        if (user) {
+          userId = user._id;
+        }
+      }
+    }
+
     const {
       name,
       description,
@@ -21,32 +38,65 @@ export const addProvider = async (req, res) => {
     } = req.body;
 
     // Upload logo if provided
+    // When using upload.fields(), req.files is an object: { logo: [file], images: [files] }
     let logoUrl = "";
-    if (req.files && req.files.find((f) => f.fieldname === "logo")) {
-      const logoFile = req.files.find((f) => f.fieldname === "logo");
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: "Ausweb/providers" },
-          (error, result) => (error ? reject(error) : resolve(result))
-        );
-        stream.end(logoFile.buffer);
-      });
-      logoUrl = result.secure_url;
+    if (req.files && req.files.logo && req.files.logo.length > 0) {
+      try {
+        const logoFile = req.files.logo[0];
+        const result = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { 
+              folder: "Ausweb/providers",
+              resource_type: "image",
+              allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"]
+            },
+            (error, result) => {
+              if (error) {
+                console.error("Cloudinary logo upload error:", error);
+                reject(error);
+              } else {
+                resolve(result);
+              }
+            }
+          );
+          stream.end(logoFile.buffer);
+        });
+        logoUrl = result.secure_url;
+        console.log("✅ Logo uploaded to Cloudinary:", logoUrl);
+      } catch (uploadError) {
+        console.error("❌ Failed to upload logo:", uploadError);
+        // Continue without logo if upload fails
+      }
     }
 
     // Upload images if provided
     const uploadedImages = [];
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        if (file.fieldname !== "logo") {
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      for (const file of req.files.images) {
+        try {
           const result = await new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream(
-              { folder: "Ausweb/providers" },
-              (error, result) => (error ? reject(error) : resolve(result))
+              { 
+                folder: "Ausweb/providers",
+                resource_type: "image",
+                allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"]
+              },
+              (error, result) => {
+                if (error) {
+                  console.error("Cloudinary image upload error:", error);
+                  reject(error);
+                } else {
+                  resolve(result);
+                }
+              }
             );
             stream.end(file.buffer);
           });
           uploadedImages.push(result.secure_url);
+          console.log("✅ Image uploaded to Cloudinary:", result.secure_url);
+        } catch (uploadError) {
+          console.error("❌ Failed to upload image:", uploadError);
+          // Continue with other images if one fails
         }
       }
     }
@@ -65,9 +115,29 @@ export const addProvider = async (req, res) => {
       images: uploadedImages,
       specialties: specialties ? (Array.isArray(specialties) ? specialties : JSON.parse(specialties)) : [],
       isActive: isActive !== undefined ? isActive : true,
+      user: userId, // Link provider to user
     });
 
-    res.status(201).json({ success: true, provider: newProvider });
+    // Link user to provider and update role to admin
+    if (userId) {
+      const user = await User.findById(userId);
+      if (user) {
+        user.provider = newProvider._id;
+        user.role = "admin"; // Update role to admin
+        await user.save();
+        console.log(`✅ User ${user.email} role updated to admin and linked to provider ${newProvider._id}`);
+      } else {
+        console.warn(`⚠️  User with ID ${userId} not found when linking provider`);
+      }
+    } else {
+      console.warn("⚠️  No user ID found in request. Provider created but not linked to user.");
+    }
+
+    res.status(201).json({ 
+      success: true, 
+      provider: newProvider,
+      message: userId ? "Provider created and user role updated to admin" : "Provider created (user not linked)"
+    });
   } catch (error) {
     console.error("❌ Error adding provider:", error);
     res.status(500).json({ success: false, message: error.message });

@@ -95,3 +95,54 @@ export const login = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const googleAuth = async (req, res) => {
+  try {
+    const { email, name, googleId, image } = req.body;
+
+    if (!email || !name || !googleId) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    // Check if user exists by email or googleId
+    let user = await User.findOne({ 
+      $or: [{ email }, { googleId }] 
+    });
+
+    if (user) {
+      // Update user with Google info if not already set
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.image = image || user.image;
+        await user.save();
+      }
+    } else {
+      // Create new user
+      user = await User.create({
+        name,
+        email,
+        googleId,
+        image,
+        password: undefined, // No password for Google OAuth users
+      });
+    }
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET);
+    
+    res.json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        image: user.image,
+        googleId: user.googleId,
+      },
+    });
+  } catch (error) {
+    console.error("Google auth error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

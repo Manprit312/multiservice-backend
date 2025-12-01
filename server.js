@@ -12,6 +12,8 @@ import bookingRoutes from "./routes/ridebookingRoutes.js";
 import providerRoutes from "./routes/providerRoutes.js";
 import hotelBookingRoutes from "./routes/hotelBookingRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import testRoutes from "./routes/testRoutes.js";
+import cabServiceRoutes from "./routes/cabServiceRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -118,7 +120,9 @@ app.use("/api/cleaning-banners", cleaningBannerRoutes);
 app.use("/api/contacts", contactRoutes);
 app.use("/api/home-banners", homeBannerRoutes);
 app.use("/api/book-ride", bookingRoutes);
+app.use("/api/cab-services", cabServiceRoutes); // Cab service CRUD
 app.use("/api/providers", providerRoutes);
+app.use("/api/test", testRoutes); // Test routes (for debugging)
 
 // 404 handler for undefined routes
 app.use((req, res) => {
