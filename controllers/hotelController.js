@@ -17,6 +17,8 @@ export const addHotel = async (req, res) => {
       description,
       amenities,
       provider,
+      rating,
+      reviewCount,
     } = req.body;
 
     // Parse and validate
@@ -28,6 +30,8 @@ export const addHotel = async (req, res) => {
       outsideFoodAllowed === "true" ||
       outsideFoodAllowed === "on" ||
       outsideFoodAllowed === true;
+    const ratingNum = rating ? Number(rating) : 0;
+    const reviewCountNum = reviewCount ? Number(reviewCount) : 0;
 
     // Upload images to Cloudinary
     const uploadedImages = [];
@@ -55,6 +59,8 @@ export const addHotel = async (req, res) => {
       amenities: amenitiesArray,
       images: uploadedImages,
       provider, // Link to provider
+      rating: ratingNum,
+      reviewCount: reviewCountNum,
     });
 
     // If provider is specified, add this hotel to the provider's services
@@ -91,10 +97,47 @@ export const updateHotel = async (req, res) => {
       }
     }
 
+    // Parse update data
+    const updateData = { ...req.body };
+    
+    // Handle rating and reviewCount if provided
+    if (updateData.rating !== undefined) {
+      updateData.rating = Number(updateData.rating);
+    }
+    if (updateData.reviewCount !== undefined) {
+      updateData.reviewCount = Number(updateData.reviewCount);
+    }
+    
+    // Handle amenities if it's a string
+    if (typeof updateData.amenities === 'string') {
+      updateData.amenities = updateData.amenities
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean);
+    }
+    
+    // Handle boolean fields
+    if (updateData.outsideFoodAllowed !== undefined) {
+      updateData.outsideFoodAllowed = 
+        updateData.outsideFoodAllowed === "true" ||
+        updateData.outsideFoodAllowed === "on" ||
+        updateData.outsideFoodAllowed === true;
+    }
+    
+    // Handle numeric fields
+    if (updateData.price !== undefined) {
+      updateData.price = Number(updateData.price);
+    }
+    if (updateData.capacity !== undefined) {
+      updateData.capacity = Number(updateData.capacity);
+    }
+
+    updateData.images = [...existingImages, ...uploadedImages];
+
     const updated = await Hotel.findByIdAndUpdate(
       id,
-      { ...req.body, images: [...existingImages, ...uploadedImages] },
-      { new: true }
+      updateData,
+      { new: true, runValidators: true }
     );
 
     res.json({ success: true, hotel: updated });
